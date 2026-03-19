@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: docs_api
+    ports:
+      - "8080:80"   # ← изменили 80:80 на 8080:80
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
