@@ -1,7 +1,10 @@
+import uuid
 from fastapi import FastAPI, HTTPException, status
 from docx import Document
 from docx.shared import Pt
 from datetime import datetime
+
+from s3_client import S3Client
 
 ru_months = {
     "January" : "января",
@@ -64,4 +67,12 @@ def generate_docs(
                             run.font.name = "Times New Roman"
                             run.font.size = Pt(12)
     template.save('result.docx')
-    return("0")
+    s3_client = S3Client()
+    unique_id = uuid.uuid4().hex[:16]
+    with open('result.docx', "rb") as f:
+        result = s3_client.upload_file(
+            file_content=f.read(),
+            filename=f"{unique_id}_contract.docx",
+            folder="test_folder"
+        )
+    return(result)
