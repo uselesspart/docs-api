@@ -21,6 +21,11 @@ ru_months = {
     "December" : "декабря"
 }
 
+def normalize_text(p):
+    for run in p.runs:
+        run.font.name = "Times New Roman"
+        run.font.size = Pt(12)
+
 app = FastAPI()
 items = []
 items_id = 1
@@ -39,6 +44,8 @@ def generate_docs(
         contract_date:datetime,
         tour_cost):
     template = Document('contract_template.docx')
+    unique_id = uuid.uuid4().int
+    short_uniue_id = str(unique_id)[:8]
 
     #Date parsing
     if contract_date:
@@ -49,9 +56,13 @@ def generate_docs(
         for p in template.paragraphs:
             if 'contract_date' in p.text:
                 p.text = p.text.replace('contract_date', f'«{contract_day}» {contract_month_ru} {contract_year}г.')
-                for run in p.runs:
-                    run.font.name = "Times New Roman"
-                    run.font.size = Pt(12)
+                normalize_text(p=p)
+            if 'contract_uuid' in p.text:
+                p.text = p.text.replace('contract_uuid', f'{short_uniue_id}')
+                normalize_text(p=p)
+            if 'customer_org_name' in p.text:
+                p.text = p.text.replace('customer_org_name', customer_org_name)
+                normalize_text(p=p)
     
     for table in template.tables:
         for row in table.rows:
@@ -68,7 +79,6 @@ def generate_docs(
                             run.font.size = Pt(12)
     template.save('result.docx')
     s3_client = S3Client()
-    unique_id = uuid.uuid4().hex[:16]
     with open('result.docx', "rb") as f:
         result = s3_client.upload_file(
             file_content=f.read(),
