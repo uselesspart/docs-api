@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException, status
 from docx import Document
 from docx.shared import Pt
 from datetime import datetime
+from docx.enum.text import WD_COLOR_INDEX
 
 from s3_client import S3Client
 
@@ -40,9 +41,12 @@ def generate_docs(
         customer_ogrn:str,
         customer_org_name:str,
         tour_price,
-        tour_date,
+        tour_date:datetime,
         contract_date:datetime,
-        tour_cost):
+        tour_cost,
+        customer_representative,
+        number_of_visitors,
+        representative_title='Генеральный директор'):
     template = Document('contract_template.docx')
     unique_id = uuid.uuid4().int
     short_uniue_id = str(unique_id)[:8]
@@ -53,6 +57,12 @@ def generate_docs(
         contract_month = contract_date.strftime("%B")
         contract_month_ru = ru_months[contract_month]
         contract_year = contract_date.year
+
+        tour_day = tour_date.day
+        tour_month = tour_date.strftime("%B")
+        tour_month_ru = ru_months[tour_month]
+        tour_year = tour_date.year
+
         for p in template.paragraphs:
             if 'contract_date' in p.text:
                 p.text = p.text.replace('contract_date', f'«{contract_day}» {contract_month_ru} {contract_year}г.')
@@ -63,6 +73,18 @@ def generate_docs(
             if 'customer_org_name' in p.text:
                 p.text = p.text.replace('customer_org_name', customer_org_name)
                 normalize_text(p=p)
+            if 'customer_representative' in p.text:
+                p.text = p.text.replace('customer_representative', customer_representative)
+                normalize_text(p=p)
+            if 'tour_date' in p.text:
+                p.text = p.text.replace('tour_date', f'«{tour_day}» {tour_month_ru} {tour_year}г')
+                normalize_text(p=p)
+            if 'representative_title' in p.text:
+                p.text = p.text.replace('representative_title', representative_title)
+                normalize_text(p=p)
+            if 'number_of_visitors' in p.text:
+                p.text = p.text.replace('number_of_visitors', number_of_visitors)
+                normalize_text(p=p)
     
     for table in template.tables:
         for row in table.rows:
@@ -71,12 +93,24 @@ def generate_docs(
                     for run in p.runs:
                             if 'customer_org_name' in run.text:
                                 run.text = run.text.replace('customer_org_name', customer_org_name)
+                                run.font.name = "Times New Roman"
+                                run.font.size = Pt(12)
                             if 'customer_ogrn' in run.text:
                                 run.text = run.text.replace('customer_ogrn', f'ОГРН {customer_ogrn}')
+                                run.font.name = "Times New Roman"
+                                run.font.size = Pt(12)
                             if 'customer_inn' in run.text:
                                 run.text = run.text.replace('customer_inn', f'ИНН {customer_inn}')
-                            run.font.name = "Times New Roman"
-                            run.font.size = Pt(12)
+                                run.font.name = "Times New Roman"
+                                run.font.size = Pt(12)
+                            if 'customer_representative' in p.text:
+                                p.text = p.text.replace('customer_representative', customer_representative)
+                                run.font.name = "Times New Roman"
+                                run.font.size = Pt(12)
+                            if 'representative_title' in p.text:
+                                p.text = p.text.replace('representative_title', representative_title)
+                                run.font.name = "Times New Roman"
+                                run.font.size = Pt(12)
     template.save('result.docx')
     s3_client = S3Client()
     with open('result.docx', "rb") as f:
