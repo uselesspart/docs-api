@@ -136,7 +136,7 @@ def _build_and_upload(
         'number_of_visitors': str(number_of_visitors),
         'customer_inn': f'ИНН {customer_inn}',
         'customer_ogrn': f'ОГРН {customer_ogrn}',
-        'kpp': kpp if kpp else '',
+        'kpp': f'КПП {kpp}' if kpp else '',
     }
     # Longest token first so a token can't be matched as a prefix of another.
     pattern = re.compile('|'.join(re.escape(k) for k in sorted(replacements, key=len, reverse=True)))
