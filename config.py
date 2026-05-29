@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     s3_region: str = "ru-1"
     s3_public_url: str = ""
     database_url: str = "sqlite:///./files.db"
+    api_key: str
 
     class Config:
         env_file = ".env"
